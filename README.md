@@ -1,45 +1,123 @@
-# Analyse de données issues de capteurs de détection de mines
+#  Analyse de signaux de mines : Clustering vs Classification supervisée
 
-Ce projet s’inscrit dans un cadre d’analyse de données appliquée à la détection de mines terrestres. À partir de mesures issues de capteurs (V, H, S), l’objectif est d’évaluer dans quelle mesure ces variables permettent de caractériser et de distinguer différents types de mines. Le travail a été mené dans une logique d’analyse progressive, combinant exploration, modélisation et interprétation des limites du jeu de données.
+##  Contexte
 
-## Données
+Ce projet explore l'analyse de données issues de signaux géophysiques (V, H, S) afin d’identifier différents types de mines.
 
-Le jeu de données est composé de mesures normalisées :
-- **V** : tension mesurée par le capteur  
-- **H** : paramètre lié à la configuration ou à la hauteur de mesure  
-- **S** : paramètre décrivant le sol  
-- **M** : type de mine (variable cible)
+L’objectif est double :
 
-Les variables explicatives décrivent des conditions expérimentales et physiques, certaines étant continues, d’autres discrètes, ce qui influence fortement la structure géométrique des données.
+- Étudier si les données présentent une structure naturellement clusterisable (non supervisé)
+- Évaluer la séparabilité des classes via un modèle supervisé
 
-## Méthodologie
+---
 
-L’analyse a été menée en deux temps.
+##  Données
 
-Dans un premier temps, des méthodes d’apprentissage non supervisé ont été utilisées afin d’explorer l’existence éventuelle de structures naturelles dans les données, indépendamment des types de mines connus. Plusieurs approches ont été testées (K-Means, DBSCAN, clustering hiérarchique, modèles de mélanges gaussiens), ainsi que des méthodes de réduction de dimension (ACP, autoencoder). Les résultats ont été évalués à l’aide de l’Adjusted Rand Index (ARI) et interprétés à l’aide de visualisations en deux et trois dimensions.
+- Variables explicatives : V, H, S
+- Variable cible : M (5 classes)
+- Données normalisées
+- Format : Excel
 
-Dans un second temps, des modèles supervisés ont été entraînés afin d’estimer la capacité maximale de discrimination permise par les variables disponibles. Des modèles linéaires et non linéaires ont été comparés (régression logistique, Random Forest, SVM), avec une évaluation basée sur l’accuracy, les matrices de confusion et les rapports de classification.
+---
 
-## Résultats
+##  Méthodologie
 
-Les méthodes non supervisées ne mettent pas en évidence de clusters stables correspondant aux cinq types de mines. Les scores ARI restent faibles quelle que soit la méthode employée, ce qui suggère un fort chevauchement des signatures dans l’espace des variables. Les visualisations 2D et 3D confirment cette observation, en montrant des zones d’ambiguïté persistantes.
+### 1️ Apprentissage non supervisé
 
-Les modèles supervisés permettent de dépasser largement le hasard, avec des performances atteignant environ 50 % d’accuracy pour les meilleurs modèles. Certaines classes présentent des signatures relativement stables et sont bien identifiées, tandis que d’autres restent fortement confondues, y compris avec des modèles non linéaires puissants.
+Deux méthodes ont été testées :
 
-La cohérence entre les résultats supervisés, non supervisés et visuels indique que ces limites ne sont pas liées au choix des algorithmes, mais à l’information contenue dans les données elles-mêmes.
+- **KMeans**
+- **Clustering hiérarchique (Agglomerative, Ward linkage)**
 
-## Approche analytique
+Métrique utilisée :
 
-Plutôt que de chercher à tout prix à améliorer un score ou à forcer une classification parfaite, l’analyse a consisté à évaluer ce que les données permettent réellement de conclure. L’absence de séparation claire en non supervisé, combinée au plafonnement des performances en supervisé, a été interprétée comme le signe d’une limite informationnelle.
+- **ARI (Adjusted Rand Index)**
 
-Cette démarche vise à distinguer un échec algorithmique d’une impossibilité structurelle. Les algorithmes ont ici servi d’outils de diagnostic : ils montrent que certaines signatures sont intrinsèquement ambiguës dans l’espace (V, H, S), tandis que d’autres sont plus stables et exploitables.
+Résultats :
 
-## Conclusion analytique
+| Méthode | ARI |
+|----------|------|
+| KMeans | ≈ 0.04 |
+| Agglomerative | ≈ 0.01 |
 
-Ce travail montre que les variables V, H et S contiennent une information partielle mais insuffisante pour reconstruire de manière fiable la typologie complète des mines définie par la variable M. La difficulté rencontrée n’est pas liée à un manque de sophistication des modèles, mais à un chevauchement structurel des signatures physiques mesurées.
+-> Les classes ne présentent pas de structure naturellement clusterisable.
 
-D’un point de vue analytique et opérationnel, ces résultats suggèrent que les données étudiées sont davantage adaptées à une logique d’aide à la décision — détection, priorisation, estimation de l’incertitude — qu’à une classification exhaustive et déterministe. Cette conclusion met en évidence l’importance de reformuler les objectifs d’analyse en fonction de l’information réellement accessible, plutôt que de supposer a priori que toute typologie est reconstructible à partir des données disponibles.
+---
 
-## Outils utilisés
+### 2 Réseau de neurones dense (supervisé)
 
-Python, pandas, numpy, scikit-learn, matplotlib, seaborn, TensorFlow / Keras.
+Architecture :
+
+- Dense 64 (ReLU)
+- Dense 32 (ReLU)
+- Dense 16 (ReLU)
+- Sortie Softmax (5 classes)
+
+Optimisation :
+
+- Adam
+- Cross-entropy
+- Accuracy
+
+Résultat :
+
+**Accuracy test ≈ 65%**
+
+Hasard = 20%
+
+-> Les données sont partiellement séparables via une frontière décisionnelle non linéaire.
+
+---
+
+##  Analyse des résultats
+
+La matrice de confusion montre :
+
+- Les classes 0 et 1 sont bien séparées
+- Les classes 2, 3 et 4 présentent un chevauchement important
+
+Cela explique :
+
+- Le faible ARI en clustering
+- La performance modérée du réseau dense
+
+Conclusion :
+
+> Les données ne forment pas de groupes naturels nets,  
+> mais une séparation supervisée est possible.
+
+---
+
+##  Compétences mobilisées
+
+- Clustering (KMeans, Ward)
+- Réseau de neurones dense (TensorFlow / Keras)
+- Analyse de métriques adaptées (ARI vs Accuracy)
+- Interprétation de matrice de confusion
+- Analyse critique des modèles
+
+---
+
+##  Structure du projet
+landmine-project/
+    │
+    ├── main.py
+    │
+    ├── data/
+    │   └── Mine_Dataset.xls
+    │
+    └──src/
+        ├── data_loader.py
+        ├── clustering.py
+        ├── deep_model.py
+        └── visualization.py
+
+
+
+---
+
+##  Conclusion personnelle
+
+Ce projet met en évidence l’importance du choix du modèle et des métriques en fonction de la nature du problème (clustering vs classification).
+
+Il montre qu’un score élevé n’est pas toujours attendu : comprendre la structure des données est essentiel.
